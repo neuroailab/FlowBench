@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+<title>FlowBench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="FlowBench: precise object motions with before and after images, optical flow, depth and masks, for training and evaluating world models and VLMs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=DM+Sans:opsz,wght@9..40,400..800&display=swap">
+<style>
+/* Layout: a classic project page. One centered column, figures carry the content, one caption line each.
+   Deliberately light-only so the paper's figures (white backgrounds) sit on the page as they do in the PDF. */
+:root {
+  --bg: #ffffff;
+  --ink: #1f1d2b;
+  --muted: #5b5869;
+  --faint: #8b879c;
+  --rule: #e7e3ef;
+  --panel: #f7f6fa;
+  --accent: #6b46b9;
+  --ok: #1e8e5a;
+  --bad: #c0392b;
+  --sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: 3px; }
+h1, h2 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+img { display: block; max-width: 100%; height: auto; }
+.col { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+section { padding-block: 44px 8px; }
+h2 { font-size: 1.75rem; font-weight: 750; letter-spacing: -.02em; text-align: center; margin-bottom: 6px; }
+.cap { text-align: center; color: var(--muted); font-size: .95rem; max-width: 70ch; margin: 0 auto 22px; }
+.mono { font-family: var(--mono); font-size: .88em; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* title block */
+header { text-align: center; padding-block: 56px 10px; }
+header h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+header h1 span { color: var(--accent); }
+.subtitle { font-size: clamp(1.1rem, 2.3vw, 1.36rem); font-weight: 450; color: var(--muted); line-height: 1.5; margin: 14px auto 0; max-width: 46ch; }
+.subtitle em { font-style: normal; font-weight: 700; color: var(--ink); background: linear-gradient(transparent 60%, #e4daf7 60%); padding: 0 .08em; }
+
+/* video (placeholder until the file exists) */
+.video { margin: 0 auto; max-width: 960px; }
+.video video { width: 100%; border-radius: 10px; display: block; }
+.video .ph { aspect-ratio: 16 / 9; border-radius: 10px; background: var(--panel); border: 1.5px dashed #cfc8df; display: grid; place-items: center; color: var(--faint); font-weight: 600; }
+.video .ph span { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.video .ph svg { width: 54px; height: 54px; }
+
+/* contributions */
+.contrib { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 34px auto 0; }
+@media (max-width: 900px) { .contrib { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 26px; } }
+@media (max-width: 520px) { .contrib { grid-template-columns: minmax(0, 1fr); } }
+.contrib > div { padding: 4px 20px; border-left: 1px solid var(--rule); }
+.contrib > div:first-child { border-left: 0; }
+@media (max-width: 900px) { .contrib > div:nth-child(odd) { border-left: 0; } }
+@media (max-width: 520px) { .contrib > div { border-left: 0; } }
+.contrib .big { font-size: clamp(2.2rem, 4.4vw, 3rem); font-weight: 800; letter-spacing: -.035em; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; height: 3.1rem; display: flex; align-items: flex-end; }
+.contrib .big small { font-size: .42em; font-weight: 700; letter-spacing: 0; margin-left: 4px; color: var(--accent); }
+.contrib .strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; align-items: end; height: 3.1rem; max-width: 300px; }
+.contrib .strip img { width: 100%; height: auto; border-radius: 4px; border: 1px solid var(--rule); }
+.contrib b { display: block; margin-top: 12px; font-size: 1.02rem; line-height: 1.35; font-weight: 750; }
+.contrib p { margin-top: 6px; color: var(--faint); font-size: .8rem; line-height: 1.4; }
+.authors { margin-top: 18px; font-size: 1.02rem; }
+.affil { color: var(--muted); font-size: .92rem; margin-top: 2px; }
+.links { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.links a, .links span { display: inline-block; padding: 8px 18px; border-radius: 999px; background: #26232f; color: #fff; text-decoration: none; font-weight: 600; font-size: .92rem; }
+.links span { background: #9b98a6; }
+
+/* pipeline figure: before -> flow -> after */
+.pipe { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr); align-items: center; }
+.pipe .ar { color: var(--accent); font-weight: 700; text-align: center; }
+.pipe img { border-radius: 6px; width: 100%; }
+.pipe img.flow { border: 1px solid var(--rule); }
+.heads { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr); font-weight: 650; font-size: .95rem; margin-bottom: 8px; text-align: center; }
+.heads small { display: block; font-weight: 400; color: var(--faint); font-size: .8rem; }
+.heads .fl { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.heads .fl img { width: 22px; height: 22px; }
+.ex { padding-block: 14px; }
+.ex + .ex { border-top: 1px solid var(--rule); }
+.qa { margin-top: 10px; font-size: 1rem; }
+.qa .src, .card .src { color: var(--faint); font-size: .82rem; margin-right: 6px; }
+.qa .ans, .card .ans { color: var(--ok); font-weight: 700; white-space: nowrap; }
+.who { color: var(--muted); font-size: .84rem; margin-top: 3px; }
+.who .y { color: var(--ok); font-weight: 700; } .who .n { color: var(--bad); font-weight: 700; }
+.mk { display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: var(--m); box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.4px rgba(0, 0, 0, .2); margin: 0 .2em 0 .1em; vertical-align: .02em; }
+
+/* gallery */
+.gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 28px; }
+@media (max-width: 760px) { .gallery { grid-template-columns: minmax(0, 1fr); } }
+.card .pipe { grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) 14px minmax(0, 1fr); }
+.card .pipe .ar { font-size: .8rem; }
+.lbls { display: grid; grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) 14px minmax(0, 1fr); color: var(--faint); font-size: .74rem; text-align: center; margin-top: 3px; }
+.card .q { margin-top: 8px; font-size: .93rem; line-height: 1.45; }
+
+
+/* try it: one question at a time, posed exactly as to the models */
+.qtabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 18px; }
+.qtabs button { font: 600 .9rem var(--sans); color: var(--muted); background: var(--bg); border: 1.5px solid var(--rule); border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+.qtabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); }
+.qtabs button .m { margin-left: 5px; font-weight: 700; }
+.qtabs button .m.y { color: var(--ok); } .qtabs button .m.n { color: var(--bad); }
+.qpanel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.qpanel[hidden] { display: none; }
+@media (max-width: 760px) { .qpanel { grid-template-columns: minmax(0, 1fr); } }
+.qimgs { display: grid; gap: 14px; }
+.qimgs figure { margin: 0; }
+.qimgs img { width: 100%; border-radius: 6px; }
+.qimgs figcaption { color: var(--faint); font-size: .8rem; margin-top: 4px; }
+.qimgs figure[hidden] { display: none; }
+.qtabs + .qpanel, .qpanel { margin-top: 4px; }
+.qscale { color: var(--muted); font-size: .92rem; margin-top: 6px; }
+.qtext { font-size: 1.05rem; line-height: 1.5; margin-top: 6px; }
+.answer-row { display: grid; gap: 8px; margin-top: 16px; }
+.answer-row button { display: flex; gap: 12px; align-items: baseline; text-align: left; font: 500 .98rem/1.4 var(--sans); color: var(--ink); background: var(--bg); border: 1.5px solid var(--rule); border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+.answer-row button .L { font-family: var(--mono); color: var(--faint); }
+.answer-row button:hover:not(:disabled) { border-color: var(--accent); }
+.answer-row button:focus-visible, .qtabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.answer-row button:disabled { cursor: default; opacity: .45; }
+.answer-row button.right { opacity: 1; border-color: var(--ok); background: #e3f4ea; }
+.answer-row button.wrong { opacity: 1; border-color: var(--bad); background: #fae5e1; }
+.qpanel .src { color: var(--faint); font-size: .82rem; }
+.verdict { margin-top: 12px; font-weight: 700; }
+.verdict.ok { color: var(--ok); } .verdict.bad { color: var(--bad); }
+
+/* sample contents */
+.tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tiles figure { margin: 0; text-align: center; font-size: .82rem; color: var(--muted); }
+.tiles img { border-radius: 6px; border: 1px solid var(--rule); margin-bottom: 5px; aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+.motion-line { text-align: center; margin: 14px 0 26px; font-size: .95rem; }
+.motion-line .mono { color: var(--faint); margin-left: 6px; }
+
+/* tables */
+.tw { overflow-x: auto; margin: 0 auto; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: .93rem; margin: 0 auto; }
+th, td { padding: 7px 14px; text-align: right; white-space: nowrap; }
+th { font-weight: 700; border-bottom: 1.5px solid var(--ink); }
+th:first-child, td:first-child { text-align: left; }
+tbody tr.grp td { padding-top: 14px; font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); text-align: left; }
+tbody tr.ref td { color: var(--muted); font-style: italic; }
+tbody tr.people td { color: var(--ink); font-style: normal; font-weight: 600; }
+tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); }
+td.best { font-weight: 800; }
+td .fn { color: var(--faint); font-size: .8em; margin-left: 2px; }
+.tnote { text-align: center; color: var(--faint); font-size: .82rem; margin-top: 8px; }
+.tasks td, .tasks th { padding: 7px 16px; }
+.tasks td:not(:first-child) { text-align: left; font-family: var(--mono); font-size: .84rem; color: var(--muted); }
+.tasks th:not(:first-child) { text-align: left; }
+.flowt tr.fam td { border-top: 1px solid var(--rule); }
+.flowt tr.sub td:first-child { padding-left: 32px; color: var(--muted); }
+.flowt tr.trained td:first-child { color: var(--accent); font-weight: 600; }
+.flowt .gain { color: var(--accent); font-size: .78em; font-weight: 700; margin-left: 5px; }
+@media (max-width: 620px) {
+  .flowt th, .flowt td { padding: 7px 6px; }
+  .flowt td:first-child { white-space: normal; }
+  .flowt tr.sub td:first-child { padding-left: 16px; }
+  .flowt .gain { display: block; margin-left: 0; }
+}
+
+/* charts */
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; margin-bottom: 36px; }
+@media (max-width: 760px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.charts figure { margin: 0; }
+.charts figcaption { text-align: center; font-weight: 650; margin-bottom: 4px; }
+.charts figcaption small { display: block; font-weight: 400; color: var(--muted); font-size: .85rem; }
+svg.chart { width: 100%; height: auto; display: block; }
+svg.chart text { fill: var(--muted); font: 500 12px var(--sans); }
+svg.chart text.l { fill: var(--ink); font-weight: 650; }
+svg.chart text.v { font-variant-numeric: tabular-nums; font-size: 11.5px; }
+svg.chart line.g { stroke: var(--rule); }
+.legend { text-align: center; font-size: .8rem; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 5px 0 12px; vertical-align: 0; }
+
+/* paper figures */
+.fig { margin: 0 0 30px; }
+.fig img { width: 100%; }
+.fig figcaption { text-align: center; color: var(--muted); font-size: .88rem; margin-top: 8px; }
+
+/* download */
+.dl { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 760px) { .dl { grid-template-columns: minmax(0, 1fr); } }
+pre { margin: 0; padding: 16px 18px; border-radius: 8px; background: var(--panel); border: 1px solid var(--rule); font: 400 .84rem/1.6 var(--mono); overflow-x: auto; color: var(--ink); }
+pre .s { color: #1e7a52; } pre .c { color: var(--faint); }
+.dl table { margin: 0; width: 100%; }
+.draft { border: 1.5px dashed var(--bad); border-radius: 8px; padding: 12px 16px; color: var(--muted); font-size: .88rem; margin-top: 40px; }
+.draft b { color: var(--bad); }
+.draft ul { margin: 6px 0 0; padding-left: 18px; }
+footer { color: var(--faint); font-size: .82rem; text-align: center; padding-block: 40px 56px; }
+</style>
+
+</head>
+<body>
+<header class="col">
+  <h1>Flow<span>Bench</span></h1>
+  <p class="subtitle">An <em>accurate, richly-annotated</em> dataset/benchmark for training/testing <em>VLMs and World Models</em> on understanding <em>hypothetical object motions</em>, made by a <em>scalable, automatic</em> pipeline</p>
+  <p class="authors">Yifan Liu*, Baihan Zhang*, Khai Loong Aw*, Klemen Kotar*, Daniel L.K. Yamins</p>
+  <p class="affil">Stanford University · *equal contribution</p>
+  <div class="links"><span>Paper (soon)</span><a href="https://github.com/liuyifan22/FlowBench">Code</a><a href="https://huggingface.co/datasets/StanfordNeuroAILab/FlowBench">Dataset</a></div>
+</header>
+
+<section class="col" id="video">
+<div class="video"><video src="assets/video.mp4" autoplay muted loop playsinline controls preload="auto" poster="assets/video.jpg"></video></div>
+<div class="contrib"><div><div class="big">−3.1<small>pts</small></div><b>A counterfactual spatial imagination gap in GPT-6 Astra</b><p>FlowBench-Real: 89.9% when it must imagine the move, 93.0% when shown the movement outcome</p></div><div><div class="big">41–50<small>%</small></div><b>Open-source VLMs are near chance in this task</b><p>9 open models on FlowBench-Real; chance is 37.6%</p></div><div><div class="big">+17–25<small>pts</small></div><b>Training on FlowBench has strong Sim2Real generalization</b><p>On FlowBench-Real after training on FlowBench-Sim only (3 open models)</p></div><div><div class="strip"><img src="assets/anatomy/before.jpg" alt="" width="64" height="48"><img src="assets/anatomy/flow.jpg" alt="" width="64" height="48"><img src="assets/anatomy/after.jpg" alt="" width="64" height="48"><img src="assets/anatomy/depth0.jpg" alt="" width="64" height="48"><img src="assets/anatomy/masks.jpg" alt="" width="64" height="48"></div><b>An accurate, scalable, richly-annotated dataset for training VLMs and World Models</b><p>Before and after images for every motion; exact flow, depth and masks for every Sim motion</p></div></div>
+</section>
+
+<section class="col" id="try">
+  <h2>Try it</h2>
+<div class="qtabs" role="tablist" aria-label="Questions"><button type="button" role="tab" aria-selected="true">1</button><button type="button" role="tab" aria-selected="false">2</button><button type="button" role="tab" aria-selected="false">3</button><button type="button" role="tab" aria-selected="false">4</button><button type="button" role="tab" aria-selected="false">5</button><button type="button" role="tab" aria-selected="false">6</button></div><div class="qpanel" data-ans="B"><div class="qimgs"><figure><img src="assets/ex/0_b.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>Before</figcaption></figure><figure data-reveal hidden><img src="assets/ex/0_a.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>After</figcaption></figure></div><div><p class="src">FlowBench-Sim · iTHOR · Occlusion</p><p class="qtext"><b>Move the laptop (marked <span class="mk" style="--m:rgb(0,0,0)"></span>black) 0.89m left and 0.54m along the camera backward axis.</b> In the after image, is the alarmclock (marked <span class="mk" style="--m:rgb(20,60,230)"></span>blue) occluded by the laptop (marked <span class="mk" style="--m:rgb(0,0,0)"></span>black) so that it is partly or fully hidden, or is it totally visible?</p><div class="answer-row"><button type="button" data-o="A"><span class="L">A</span><span>Partly or fully hidden (occluded).</span></button><button type="button" data-o="B"><span class="L">B</span><span>Totally visible (not occluded).</span></button></div><p class="verdict" aria-live="polite"></p><p class="who" data-reveal hidden>People 1/1 · GPT-6 Astra <span class="n">✗</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div></div>
+<div class="qpanel" data-ans="B" hidden><div class="qimgs"><figure><img src="assets/ex/1_b.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>Before</figcaption></figure><figure data-reveal hidden><img src="assets/ex/1_a.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>After</figcaption></figure></div><div><p class="src">FlowBench-Real · Berkeley UR5 · Occlusion</p><p class="qscale">For scale, the object marked <span class="mk" style="--m:rgb(0,215,230)"></span>cyan is about 13 cm across at its widest point.</p><p class="qtext"><b>If the robot arm moves the object marked <span class="mk" style="--m:rgb(0,0,0)"></span>black so that, from the camera&#x27;s perspective, its center ends up about 5 cm to the right, and about 14 cm up from where it was before (directions as seen from the camera),</b> after this move, will the object marked <span class="mk" style="--m:rgb(0,215,230)"></span>cyan be fully visible, or will part of your view of the object marked <span class="mk" style="--m:rgb(0,215,230)"></span>cyan be blocked?</p><div class="answer-row"><button type="button" data-o="A"><span class="L">A</span><span>Fully visible.</span></button><button type="button" data-o="B"><span class="L">B</span><span>Partially blocked (occluded).</span></button></div><p class="verdict" aria-live="polite"></p><p class="who" data-reveal hidden>People 2/2 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="n">✗</span>, after Sim training <span class="n">✗</span></p></div></div>
+<div class="qpanel" data-ans="B" hidden><div class="qimgs"><figure><img src="assets/ex/2_b.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>Before</figcaption></figure><figure data-reveal hidden><img src="assets/ex/2_a.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>After</figcaption></figure></div><div><p class="src">FlowBench-Sim · iTHOR · Closer To</p><p class="qtext"><b>Move the box (marked <span class="mk" style="--m:rgb(140,40,190)"></span>purple) 0.84m right and 0.63m along the camera forward axis.</b> After the move, is the box (marked <span class="mk" style="--m:rgb(140,40,190)"></span>purple) closer to which of the following?</p><div class="answer-row"><button type="button" data-o="A"><span class="L">A</span><span>the chair (marked <span class="mk" style="--m:rgb(0,215,230)"></span>cyan)</span></button><button type="button" data-o="B"><span class="L">B</span><span>the coffeetable (marked <span class="mk" style="--m:rgb(130,75,25)"></span>brown)</span></button><button type="button" data-o="C"><span class="L">C</span><span>the plate (marked <span class="mk" style="--m:rgb(20,60,230)"></span>blue)</span></button><button type="button" data-o="D"><span class="L">D</span><span>the vase (marked <span class="mk" style="--m:rgb(255,225,25)"></span>yellow)</span></button></div><p class="verdict" aria-live="polite"></p><p class="who" data-reveal hidden>People 1/1 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div></div>
+<div class="qpanel" data-ans="B" hidden><div class="qimgs"><figure><img src="assets/ex/3_b.jpg" alt="" width="640" height="359" loading="lazy"><figcaption>Before</figcaption></figure><figure data-reveal hidden><img src="assets/ex/3_a.jpg" alt="" width="640" height="359" loading="lazy"><figcaption>After</figcaption></figure></div><div><p class="src">FlowBench-Real · DROID · Depth Order</p><p class="qscale">For scale, the object marked <span class="mk" style="--m:rgb(140,40,190)"></span>purple is about 19 cm across at its widest point.</p><p class="qtext"><b>If the robot arm moves the object marked <span class="mk" style="--m:rgb(255,120,200)"></span>pink so that, from the camera&#x27;s perspective, its center ends up about 12 cm to the right, and about 45 cm up from where it was before (directions as seen from the camera),</b> will the object marked <span class="mk" style="--m:rgb(255,120,200)"></span>pink end up closer to the camera than the object marked <span class="mk" style="--m:rgb(140,40,190)"></span>purple?</p><div class="answer-row"><button type="button" data-o="A"><span class="L">A</span><span>Yes.</span></button><button type="button" data-o="B"><span class="L">B</span><span>No.</span></button></div><p class="verdict" aria-live="polite"></p><p class="who" data-reveal hidden>People 1/2 · GPT-6 Astra <span class="n">✗</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="n">✗</span></p></div></div>
+<div class="qpanel" data-ans="A" hidden><div class="qimgs"><figure><img src="assets/ex/4_b.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>Before</figcaption></figure><figure data-reveal hidden><img src="assets/ex/4_a.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>After</figcaption></figure></div><div><p class="src">FlowBench-Real · Bridge V2 · Left Right</p><p class="qscale">For scale, the object marked <span class="mk" style="--m:rgb(30,170,50)"></span>green is about 5 cm across at its widest point.</p><p class="qtext"><b>If the robot arm moves the object marked <span class="mk" style="--m:rgb(130,75,25)"></span>brown so that, from the camera&#x27;s perspective, its center ends up about 19 cm to the left, and about 3 cm up from where it was before (directions as seen from the camera),</b> will the object marked <span class="mk" style="--m:rgb(130,75,25)"></span>brown end up to the left of the object marked <span class="mk" style="--m:rgb(0,215,230)"></span>cyan, from the camera&#x27;s viewpoint?</p><div class="answer-row"><button type="button" data-o="A"><span class="L">A</span><span>Yes.</span></button><button type="button" data-o="B"><span class="L">B</span><span>No.</span></button></div><p class="verdict" aria-live="polite"></p><p class="who" data-reveal hidden>People 2/2 · GPT-6 Astra <span class="y">✓</span> · Claude Fable 5.1 <span class="y">✓</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div></div>
+<div class="qpanel" data-ans="B" hidden><div class="qimgs"><figure><img src="assets/ex/5_b.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>Before</figcaption></figure><figure data-reveal hidden><img src="assets/ex/5_a.jpg" alt="" width="640" height="480" loading="lazy"><figcaption>After</figcaption></figure></div><div><p class="src">FlowBench-Real · Language-Table · Left Right</p><p class="qscale">For scale, the object marked <span class="mk" style="--m:rgb(255,140,0)"></span>orange is about 5 cm across at its widest point.</p><p class="qtext"><b>If the robot arm moves the object marked <span class="mk" style="--m:rgb(255,225,25)"></span>yellow so that, from the camera&#x27;s perspective, its center ends up about 12 cm to the left, and about 7 cm down from where it was before (directions as seen from the camera),</b> will the object marked <span class="mk" style="--m:rgb(255,225,25)"></span>yellow end up to the left of the object marked <span class="mk" style="--m:rgb(30,170,50)"></span>green, from the camera&#x27;s viewpoint?</p><div class="answer-row"><button type="button" data-o="A"><span class="L">A</span><span>Yes.</span></button><button type="button" data-o="B"><span class="L">B</span><span>No.</span></button></div><p class="verdict" aria-live="polite"></p><p class="who" data-reveal hidden>People 2/2 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="n">✗</span>, after Sim training <span class="n">✗</span></p></div></div>
+</section>
+
+<section class="col" id="examples">
+  <h2>Examples</h2>
+  <p class="cap">Test questions, with how people and models answered them without seeing the after image.</p>
+<div class="gallery"><div class="card"><div class="pipe"><img src="assets/ex/6_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/6_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/6_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Real · Bridge V2 · Closer To</span><br><b>Move <span class="mk" style="--m:rgb(0,215,230)"></span>cyan 12 cm left and 11 cm up.</b> Which object will it end up closest to? <span class="ans">→ <span class="mk" style="--m:rgb(255,140,0)"></span>orange</span></p><p class="who">People 2/2 · GPT-6 Astra <span class="n">✗</span> · Claude Fable 5.1 <span class="n">✗</span> (<span class="y">✓</span> seeing the after image) · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/7_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/7_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/7_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Sim · iTHOR · Occlusion</span><br><b>Move the chair <span class="mk" style="--m:rgb(130,75,25)"></span>brown 0.30 m left and 0.17 m toward the camera.</b> Will the book <span class="mk" style="--m:rgb(30,170,50)"></span>green be hidden? <span class="ans">→ Yes, partly hidden</span></p><p class="who">People 1/1 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="n">✗</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/8_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/8_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/8_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Real · Bridge V2 · Occlusion</span><br><b>Move <span class="mk" style="--m:rgb(0,215,230)"></span>cyan 18 cm right and 4 cm up.</b> Will <span class="mk" style="--m:rgb(255,225,25)"></span>yellow be fully visible? <span class="ans">→ Yes</span></p><p class="who">People 2/2 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="n">✗</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/9_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/9_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/9_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Sim · iTHOR · Left Right</span><br><b>Move the garbage can <span class="mk" style="--m:rgb(0,0,0)"></span>black 0.75 m right.</b> Will it be left of the stove knob <span class="mk" style="--m:rgb(30,170,50)"></span>green? <span class="ans">→ No</span></p><p class="who">GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/10_b.jpg" alt="" width="640" height="359" loading="lazy"><span class="ar">→</span><img src="assets/ex/10_f.jpg" alt="" width="640" height="359" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/10_a.jpg" alt="" width="640" height="359" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Real · DROID · Depth Order</span><br><b>Move <span class="mk" style="--m:rgb(0,0,0)"></span>black 47 cm right and 19 cm up.</b> Will it end up closer to the camera than <span class="mk" style="--m:rgb(30,170,50)"></span>green? <span class="ans">→ No</span></p><p class="who">People 1/2 · GPT-6 Astra <span class="n">✗</span> · Claude Fable 5.1 <span class="n">✗</span> (<span class="y">✓</span> seeing the after image) · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/11_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/11_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/11_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Sim · iTHOR · Contact Wall</span><br><b>Move the fridge <span class="mk" style="--m:rgb(0,0,0)"></span>black 0.19 m right and 0.11 m away from the camera.</b> Will it touch a wall? <span class="ans">→ Yes</span></p><p class="who">People 1/1 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/12_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/12_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/12_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Real · Language-Table · Near Object</span><br><b>Move <span class="mk" style="--m:rgb(140,40,190)"></span>purple 15 cm right and 4 cm down.</b> Will it end up within 30 cm of <span class="mk" style="--m:rgb(255,140,0)"></span>orange? <span class="ans">→ Yes</span></p><p class="who">People 2/2 · GPT-6 Astra <span class="n">✗</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/13_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/13_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/13_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Sim · iTHOR · Left Right</span><br><b>Move the stool <span class="mk" style="--m:rgb(255,140,0)"></span>orange 0.60 m right.</b> Will it be right of the bread <span class="mk" style="--m:rgb(130,75,25)"></span>brown? <span class="ans">→ Yes</span></p><p class="who">People 1/1 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="y">✓</span>, after Sim training <span class="y">✓</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/14_b.jpg" alt="" width="640" height="480" loading="lazy"><span class="ar">→</span><img src="assets/ex/14_f.jpg" alt="" width="640" height="480" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/14_a.jpg" alt="" width="640" height="480" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Real · RT-1 · Closer To</span><br><b>Move <span class="mk" style="--m:rgb(30,170,50)"></span>green 15 cm right and 27 cm down.</b> Which object will it end up closest to? <span class="ans">→ <span class="mk" style="--m:rgb(0,0,0)"></span>black</span></p><p class="who">People 1/2 · GPT-6 Astra <span class="y">✓</span> · Qwen3-VL-8B <span class="n">✗</span>, after Sim training <span class="n">✗</span></p></div>
+<div class="card"><div class="pipe"><img src="assets/ex/15_b.jpg" alt="" width="640" height="359" loading="lazy"><span class="ar">→</span><img src="assets/ex/15_f.jpg" alt="" width="640" height="359" loading="lazy" class="flow"><span class="ar">→</span><img src="assets/ex/15_a.jpg" alt="" width="640" height="359" loading="lazy"></div><div class="lbls"><span>before</span><span></span><span>flow</span><span></span><span>after</span></div><p class="q"><span class="src">FlowBench-Real · DROID · Near Object</span><br><b>Move <span class="mk" style="--m:rgb(140,40,190)"></span>purple 13 cm left and 13 cm down.</b> Will it end up within 20 cm of <span class="mk" style="--m:rgb(20,60,230)"></span>blue? <span class="ans">→ No</span></p><p class="who">People 2/2 · GPT-6 Astra <span class="y">✓</span> · Claude Fable 5.1 <span class="y">✓</span> · Qwen3-VL-8B <span class="n">✗</span>, after Sim training <span class="y">✓</span></p></div></div>
+</section>
+
+<section class="col" id="dataset">
+  <h2>Dataset</h2>
+  <p class="cap">Simulated homes for scale, real robot tabletops for transfer.</p>
+  <figure class="fig"><img src="assets/fig/overview.webp" alt="FlowBench-Sim and FlowBench-Real overview: example scenes, sizes and question categories" width="2200" height="720" loading="lazy"></figure>
+</section>
+
+<section class="col" id="sample">
+  <h2>What each sample contains</h2>
+  <p class="cap">One motion, every layer. Sim layers are exact simulator output, released for every Sim question; Real answers are computed from layers measured with SAM 3, Depth Anything 3 and AllTracker.</p>
+<div class="tiles"><figure><img src="assets/anatomy/before.jpg" alt="Before image" width="480" height="360" loading="lazy">Before image</figure><figure><img src="assets/anatomy/flow.jpg" alt="Optical flow" width="480" height="360" loading="lazy">Optical flow</figure><figure><img src="assets/anatomy/after.jpg" alt="After image" width="480" height="360" loading="lazy">After image</figure><figure><img src="assets/anatomy/depth0.jpg" alt="Depth, before" width="480" height="360" loading="lazy">Depth, before</figure><figure><img src="assets/anatomy/depth1.jpg" alt="Depth, after" width="480" height="360" loading="lazy">Depth, after</figure><figure><img src="assets/anatomy/masks.jpg" alt="Instance masks" width="480" height="360" loading="lazy">Instance masks</figure></div><p class="motion-line"><b>Move the chair <span class="mk" style="--m:rgb(130,75,25)"></span>brown 0.30 m left and 0.17 m toward the camera.</b><span class="mono">motion_command</span></p><div class="tw"><table class="tasks"><thead><tr><th>Train</th><th>Input</th><th>Target</th></tr></thead><tbody><tr><td>Text → flow</td><td>before image + motion</td><td>optical flow</td></tr><tr><td>Flow → next frame</td><td>before image + flow</td><td>after image</td></tr><tr><td>Text → next frame</td><td>before image + motion</td><td>after image</td></tr><tr><td>Counterfactual VQA</td><td>before image + motion + question</td><td>answer</td></tr><tr><td>Static VQA</td><td>after image + question about it</td><td>answer</td></tr></tbody></table></div>
+</section>
+
+<section class="col" id="results">
+  <h2>Results</h2>
+  <p class="cap">Accuracy when the model sees only the before image and the motion.</p>
+<div class="charts"><figure><figcaption>Training on simulation transfers to real robots<small>Before and after fine-tuning on FlowBench-Sim only</small></figcaption><svg class="chart" viewBox="0 0 520 232" role="img"><line class="g" x1="160.0" x2="160.0" y1="14" y2="208"/><text x="160.0" y="225" text-anchor="middle">30%</text><line class="g" x1="215.7" x2="215.7" y1="14" y2="208"/><text x="215.7" y="225" text-anchor="middle">40%</text><line class="g" x1="271.3" x2="271.3" y1="14" y2="208"/><text x="271.3" y="225" text-anchor="middle">50%</text><line class="g" x1="327.0" x2="327.0" y1="14" y2="208"/><text x="327.0" y="225" text-anchor="middle">60%</text><line class="g" x1="382.7" x2="382.7" y1="14" y2="208"/><text x="382.7" y="225" text-anchor="middle">70%</text><line class="g" x1="438.3" x2="438.3" y1="14" y2="208"/><text x="438.3" y="225" text-anchor="middle">80%</text><line class="g" x1="494.0" x2="494.0" y1="14" y2="208"/><text x="494.0" y="225" text-anchor="middle">90%</text><text class="l" x="148" y="43.0" text-anchor="end">Qwen3-VL-8B · Sim</text><line x1="254.1" x2="417.7" y1="39.0" y2="39.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="254.1" cy="39.0" r="6.5" fill="#8b879c"/><circle cx="417.7" cy="39.0" r="6.5" fill="#6b46b9"/><text class="v" x="243.1" y="43.0" text-anchor="end">46.9</text><text class="v" x="428.7" y="43.0" style="fill:#1f1d2b;font-weight:700">76.3</text><text class="l" x="148" y="73.0" text-anchor="end">Qwen3-VL-8B · Real</text><line x1="230.7" x2="324.8" y1="69.0" y2="69.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="230.7" cy="69.0" r="6.5" fill="#8b879c"/><circle cx="324.8" cy="69.0" r="6.5" fill="#6b46b9"/><text class="v" x="219.7" y="73.0" text-anchor="end">42.7</text><text class="v" x="335.8" y="73.0" style="fill:#1f1d2b;font-weight:700">59.6</text><line x1="0" x2="520" y1="84.0" y2="84.0" stroke="#e7e3ef" stroke-dasharray="2 4"/><text class="l" x="148" y="103.0" text-anchor="end">Qwen3.5-9B · Sim</text><line x1="239.6" x2="419.4" y1="99.0" y2="99.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="239.6" cy="99.0" r="6.5" fill="#8b879c"/><circle cx="419.4" cy="99.0" r="6.5" fill="#6b46b9"/><text class="v" x="228.6" y="103.0" text-anchor="end">44.3</text><text class="v" x="430.4" y="103.0" style="fill:#1f1d2b;font-weight:700">76.6</text><text class="l" x="148" y="133.0" text-anchor="end">Qwen3.5-9B · Real</text><line x1="230.7" x2="369.9" y1="129.0" y2="129.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="230.7" cy="129.0" r="6.5" fill="#8b879c"/><circle cx="369.9" cy="129.0" r="6.5" fill="#6b46b9"/><text class="v" x="219.7" y="133.0" text-anchor="end">42.7</text><text class="v" x="380.9" y="133.0" style="fill:#1f1d2b;font-weight:700">67.7</text><line x1="0" x2="520" y1="144.0" y2="144.0" stroke="#e7e3ef" stroke-dasharray="2 4"/><text class="l" x="148" y="163.0" text-anchor="end">LLaVA-OV-2-8B · Sim</text><line x1="277.5" x2="420.0" y1="159.0" y2="159.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="277.5" cy="159.0" r="6.5" fill="#8b879c"/><circle cx="420.0" cy="159.0" r="6.5" fill="#6b46b9"/><text class="v" x="266.5" y="163.0" text-anchor="end">51.1</text><text class="v" x="431.0" y="163.0" style="fill:#1f1d2b;font-weight:700">76.7</text><text class="l" x="148" y="193.0" text-anchor="end">LLaVA-OV-2-8B · Real</text><line x1="243.5" x2="354.3" y1="189.0" y2="189.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="243.5" cy="189.0" r="6.5" fill="#8b879c"/><circle cx="354.3" cy="189.0" r="6.5" fill="#6b46b9"/><text class="v" x="232.5" y="193.0" text-anchor="end">45.0</text><text class="v" x="365.3" y="193.0" style="fill:#1f1d2b;font-weight:700">64.9</text></svg><p class="legend"><i style="background:#8b879c"></i>base model<i style="background:#6b46b9"></i>fine-tuned on FlowBench-Sim</p></figure><figure><figcaption>Imagining the outcome costs accuracy<small>FlowBench-Real, before image + motion vs. after image</small></figcaption><svg class="chart" viewBox="0 0 520 142" role="img"><line class="g" x1="160.0" x2="160.0" y1="14" y2="118"/><text x="160.0" y="135" text-anchor="middle">30%</text><line class="g" x1="202.3" x2="202.3" y1="14" y2="118"/><text x="202.3" y="135" text-anchor="middle">40%</text><line class="g" x1="244.6" x2="244.6" y1="14" y2="118"/><text x="244.6" y="135" text-anchor="middle">50%</text><line class="g" x1="286.9" x2="286.9" y1="14" y2="118"/><text x="286.9" y="135" text-anchor="middle">60%</text><line class="g" x1="329.1" x2="329.1" y1="14" y2="118"/><text x="329.1" y="135" text-anchor="middle">70%</text><line class="g" x1="371.4" x2="371.4" y1="14" y2="118"/><text x="371.4" y="135" text-anchor="middle">80%</text><line class="g" x1="413.7" x2="413.7" y1="14" y2="118"/><text x="413.7" y="135" text-anchor="middle">90%</text><line class="g" x1="456.0" x2="456.0" y1="14" y2="118"/><text x="456.0" y="135" text-anchor="middle">100%</text><text x="518" y="14" text-anchor="end">gap</text><text class="l" x="148" y="43.0" text-anchor="end">Claude Fable 5.1 (low)</text><line x1="393.8" x2="415.0" y1="39.0" y2="39.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="393.8" cy="39.0" r="6.5" fill="#6b46b9"/><circle cx="415.0" cy="39.0" r="6.5" fill="#3f6fd1"/><text class="v" x="382.8" y="43.0" text-anchor="end">85.3</text><text class="v" x="426.0" y="43.0" style="fill:#1f1d2b;font-weight:700">90.3</text><text class="v" x="518" y="43.0" text-anchor="end" style="fill:#c0392b;font-weight:700">−5.0</text><text class="l" x="148" y="73.0" text-anchor="end">GPT-6 Astra (max)</text><line x1="413.3" x2="426.4" y1="69.0" y2="69.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="413.3" cy="69.0" r="6.5" fill="#6b46b9"/><circle cx="426.4" cy="69.0" r="6.5" fill="#3f6fd1"/><text class="v" x="402.3" y="73.0" text-anchor="end">89.9</text><text class="v" x="437.4" y="73.0" style="fill:#1f1d2b;font-weight:700">93.0</text><text class="v" x="518" y="73.0" text-anchor="end" style="fill:#c0392b;font-weight:700">−3.1</text><text class="l" x="148" y="103.0" text-anchor="end">Qwen3-VL-8B</text><line x1="213.7" x2="268.7" y1="99.0" y2="99.0" stroke="#e7e3ef" stroke-width="6" stroke-linecap="round"/><circle cx="213.7" cy="99.0" r="6.5" fill="#6b46b9"/><circle cx="268.7" cy="99.0" r="6.5" fill="#3f6fd1"/><text class="v" x="202.7" y="103.0" text-anchor="end">42.7</text><text class="v" x="279.7" y="103.0" style="fill:#1f1d2b;font-weight:700">55.7</text><text class="v" x="518" y="103.0" text-anchor="end" style="fill:#c0392b;font-weight:700">−13.0</text></svg><p class="legend"><i style="background:#6b46b9"></i>must imagine<i style="background:#3f6fd1"></i>outcome shown</p></figure></div>
+<div class="tw"><table><thead><tr><th>Model</th><th>FlowBench-Real</th><th>FlowBench-Sim</th></tr></thead><tbody><tr class="ref people"><td>People</td><td>77.2</td><td>64.2</td></tr>
+<tr class="grp"><td colspan="3">Proprietary</td></tr>
+<tr><td>GPT-6 Astra, max effort<span class="fn">†</span></td><td class="best">89.9</td><td>60.2</td></tr>
+<tr><td>Claude Fable 5.1, max effort<span class="fn">‡</span></td><td>88.9</td><td>–</td></tr>
+<tr><td>GPT-6 Astra, low effort<span class="fn">†</span></td><td>88.4</td><td>54.6</td></tr>
+<tr><td>Claude Fable 5.1, low effort<span class="fn">‡</span></td><td>85.3</td><td>56.6</td></tr>
+<tr><td>GPT-5.6 Luna, low effort<span class="fn">‡</span></td><td>65.0</td><td>47.6</td></tr>
+<tr class="grp"><td colspan="3">Open-source</td></tr>
+<tr><td>Gemma-4-31B</td><td>50.4</td><td>44.6</td></tr>
+<tr><td>LLaVA-OV-2-8B</td><td>45.0</td><td>51.1</td></tr>
+<tr><td>Gemma-4-12B</td><td>44.6</td><td>41.6</td></tr>
+<tr><td>Qwen3-VL-32B</td><td>44.4</td><td>48.3</td></tr>
+<tr><td>Qwen3-VL-8B</td><td>42.7</td><td>46.9</td></tr>
+<tr><td>Qwen3.5-9B</td><td>42.7</td><td>44.3</td></tr>
+<tr><td>InternVL3.5-8B</td><td>42.7</td><td>40.6</td></tr>
+<tr><td>InternVL3.5-30B-A3B</td><td>41.2</td><td>41.4</td></tr>
+<tr><td>LLaVA-OV-1.5-8B</td><td>41.0</td><td>47.2</td></tr>
+<tr class="grp"><td colspan="3">Trained on FlowBench-Sim</td></tr>
+<tr><td>Qwen3.5-9B</td><td>67.7</td><td>76.6</td></tr>
+<tr><td>LLaVA-OV-2-8B</td><td>64.9</td><td class="best">76.7</td></tr>
+<tr><td>Qwen3-VL-8B</td><td>59.6</td><td>76.3</td></tr>
+<tr><td>Ψ-0.6</td><td>51.4</td><td>73.1</td></tr>
+<tr><td>Ψ-0.6, imagine then answer</td><td>–</td><td>50.7</td></tr>
+<tr class="ref"><td>Chance</td><td>37.6</td><td>35.8</td></tr></tbody></table></div><p class="tnote">Accuracy (%). People: 12 participants, 403 answers on Real; 120 answers on Sim. † 50% and ‡ 20% of questions. Mean of three answer orders for open models.</p>
+</section>
+
+<section class="col" id="flow">
+  <h2>Text-to-flow</h2>
+  <p class="cap">Predict the optical flow of the stated motion from the before image, zero-shot and after training on FlowBench-Sim.</p>
+<div class="tw"><table class="flowt"><thead><tr><th>Method</th><th>Acc ↑</th><th>rEPE ↓</th><th>ΔPSNR ↑</th></tr></thead><tbody><tr class="ref"><td>Zero flow</td><td>0.0%</td><td>1.000</td><td>+0.00 dB</td></tr>
+<tr class="fam"><td>Grounding DINO + SAM 2 + Depth Pro<span class="fn">*</span></td><td>50.2%</td><td>0.581</td><td>–</td></tr>
+<tr class="sub"><td>+ depth calibration</td><td>50.8%<span class="gain">+0.6</span></td><td>0.552</td><td>–</td></tr>
+<tr class="fam"><td>FOFPred</td><td>0.2%</td><td>0.985</td><td>–</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim (LoRA)</td><td>2.4%<span class="gain">+2.3</span></td><td>0.915</td><td>–</td></tr>
+<tr class="fam"><td>Qwen-Image-Edit<span class="fn">§</span></td><td>2.9%</td><td>2.432</td><td>-1.81 dB</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim (QLoRA)</td><td>7.9%<span class="gain">+5.0</span></td><td>2.154</td><td>-1.63 dB</td></tr>
+<tr class="fam"><td>InstructPix2Pix<span class="fn">§</span></td><td>0.5%</td><td>1.620</td><td>-4.92 dB</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim (plain MSE)</td><td>10.5%<span class="gain">+10.0</span></td><td>2.659</td><td>-3.34 dB</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim (SoM target)</td><td>13.7%<span class="gain">+13.2</span></td><td>2.938</td><td>-0.97 dB</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim (mask-weighted)</td><td>16.4%<span class="gain">+15.9</span></td><td>2.655</td><td>-3.99 dB</td></tr>
+<tr class="fam"><td>Ψ-0.6, default decoding</td><td>10.8%</td><td>0.858</td><td>+0.79 dB</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim</td><td>36.0%<span class="gain">+25.2</span></td><td>0.603</td><td>+1.60 dB</td></tr>
+<tr class="fam"><td>Ψ-0.6, motion-first decoding + text guidance</td><td>52.1%</td><td>0.534</td><td>+1.03 dB</td></tr>
+<tr class="sub trained"><td>+ trained on FlowBench-Sim</td><td class=best>61.7%<span class="gain">+9.6</span></td><td>0.423</td><td>+0.94 dB</td></tr></tbody></table></div><p class="tnote">FlowBench-Sim test split. Acc: predictions within 40% of the true motion. rEPE: error relative to the motion (no motion = 1.000). ΔPSNR: generated after frame vs. copying the before frame, changed region. * given camera intrinsics. § given the true object mask.</p>
+</section>
+
+<section class="col" id="built">
+  <h2>How it's built</h2>
+  <p class="cap">Answers come from simulator state or measured 3D geometry. No model picks an answer.</p>
+  <figure class="fig"><img src="assets/fig/sim.webp" alt="FlowBench-Sim construction pipeline and an annotated training example" width="2200" height="1083"></figure>
+  <figure class="fig"><img src="assets/fig/real.webp" alt="FlowBench-Real construction pipeline and an annotated test question" width="2200" height="1411"></figure>
+</section>
+
+<section class="col" id="download">
+  <h2>Get the data</h2>
+  <p class="cap">Images, questions and the Sim ground truth load with Hugging Face <span class="mono">datasets</span>.</p>
+  <div class="dl">
+<pre>from datasets import load_dataset
+
+real = load_dataset(<span class="s">"StanfordNeuroAILab/FlowBench"</span>,
+                    <span class="s">"real_colour_som"</span>, split=<span class="s">"test"</span>)
+row = real[0]
+row[<span class="s">"image_before"</span>], row[<span class="s">"motion_command"</span>], row[<span class="s">"question"</span>]
+row[<span class="s">"image_after"</span>], row[<span class="s">"static_question"</span>], row[<span class="s">"answer"</span>]
+
+<span class="c"># 420K Sim training questions: stream them</span>
+sim = load_dataset(<span class="s">"StanfordNeuroAILab/FlowBench"</span>,
+                   <span class="s">"sim_colour_som"</span>, split=<span class="s">"train"</span>,
+                   streaming=True)
+
+<span class="c"># exact flow, depth, segmentation, masks per Sim question</span>
+gt = load_dataset(<span class="s">"StanfordNeuroAILab/FlowBench"</span>,
+                  <span class="s">"sim_ground_truth"</span>, split=<span class="s">"test"</span>)</pre>
+    <div class="tw"><table>
+      <thead><tr><th>Config</th><th>Train</th><th>Test</th><th>Size</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">sim_colour_som</td><td>419,612</td><td>714</td><td>62 GB</td></tr>
+        <tr><td class="mono">sim_red_som</td><td>419,612</td><td>714</td><td>60 GB</td></tr>
+        <tr><td class="mono">sim_natural</td><td>419,612</td><td>714</td><td>45 GB</td></tr>
+        <tr><td class="mono">sim_ground_truth</td><td>419,612</td><td>714</td><td>121 GB</td></tr>
+        <tr><td class="mono">real_colour_som</td><td>8,575</td><td>1,083</td><td>1.2 GB</td></tr>
+        <tr><td class="mono">real_red_som</td><td>8,575</td><td>1,083</td><td>0.9 GB</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="col" id="cite">
+  <h2>BibTeX</h2>
+<pre>@article{liu2026flowbench,
+  title   = {FlowBench: Counterfactual Imagination Training for Spatial Intelligence},
+  author  = {Liu, Yifan and Zhang, Baihan and Aw, Khai Loong and Kotar, Klemen and Yamins, Daniel L. K.},
+  journal = {arXiv preprint},
+  year    = {2026}
+}</pre>
+
+</section>
+
+<footer class="col">Sim renders from AI2-THOR (ProcTHOR-10k, iTHOR). Real frames keep the licences of Bridge V2, DROID, Language-Table, RT-1 and Berkeley UR5.</footer>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll(".qtabs button")], panels = [...document.querySelectorAll(".qpanel")];
+  tabs.forEach((tab, i) => tab.addEventListener("click", () => {
+    tabs.forEach((t, j) => t.setAttribute("aria-selected", String(i === j)));
+    panels.forEach((p, j) => (p.hidden = i !== j));
+  }));
+  panels.forEach((p, i) => p.addEventListener("click", (e) => {
+    const b = e.target.closest(".answer-row button");
+    if (!b || p.dataset.done) return;
+    p.dataset.done = "1";
+    const ok = b.dataset.o === p.dataset.ans;
+    p.querySelectorAll(".answer-row button").forEach((o) => {
+      o.disabled = true;
+      if (o.dataset.o === p.dataset.ans) o.classList.add("right");
+      else if (o === b) o.classList.add("wrong");
+    });
+    const v = p.querySelector(".verdict");
+    v.textContent = ok ? `Correct. The answer is ${p.dataset.ans}.` : `Not quite. The answer is ${p.dataset.ans}.`;
+    v.className = "verdict " + (ok ? "ok" : "bad");
+    p.querySelectorAll("[data-reveal]").forEach((x) => (x.hidden = false));
+    tabs[i].insertAdjacentHTML("beforeend", `<span class="m ${ok ? "y" : "n"}">${ok ? "✓" : "✗"}</span>`);
+  }));
+})();
+</script>
+
+</body>
+</html>
